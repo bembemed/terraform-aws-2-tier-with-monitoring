@@ -1,0 +1,79 @@
+
+#!/bin/bash
+exec > /var/log/user-data.log 2>&1
+
+# Update system
+sudo apt update -y    # For Amazon Linux
+
+# Install Node.js and npm
+curl -fsSL https://rpm.nodesource.com/setup_18.x | sudo bash -  # Amazon Linux
+sudo apt install -y nodejs 
+sudo apt install -y npm                                       # Amazon Linux
+
+# Install MySQL client
+sudo apt install -y mysql-client       # Amazon Linux
+
+# Create a directory for the app
+mkdir -p /home/ubuntu/myapp
+cd /home/ubuntu/myapp
+
+# Set environment variables for RDS
+export DB_HOST=${rds_db_endpoint}
+export DB_PORT=3306
+export DB_NAME=webapp
+export DB_USER=admin
+export DB_PASSWORD=password
+
+# Create a .env file for database configuration
+cat <<EOF > .env
+DB_HOST=$DB_HOST
+DB_PORT=$DB_PORT
+DB_NAME=$DB_NAME
+DB_USER=$DB_USER
+DB_PASSWORD=$DB_PASSWORD
+EOF
+
+# Create a simple Node.js app
+cat <<EOF > app.js
+const express = require('express');
+const mysql = require('mysql2');
+require('dotenv').config();
+
+const app = express();
+const port = 8080;
+
+// MySQL Connection
+const connection = mysql.createConnection({
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
+    port: process.env.DB_PORT
+});
+
+connection.connect(err => {
+    if (err) {
+        console.error('Database connection failed:', err);
+        return;
+    }
+    console.log('Connected to MySQL Database');
+});
+
+app.get('/', (req, res) => {
+    res.send('Node.js App is Running and Connected to MySQL!');
+});
+
+app.listen(port, () => {
+    console.log(\`Server is running on port 8080\`);
+});
+EOF
+
+# Install dependencies
+npm init -y
+npm install express mysql2 dotenv
+
+# Start the Node.js application
+nohup node app.js > output.log 2>&1 &
+
+# Print completion message
+echo "Node.js application deployed successfully!"
