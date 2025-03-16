@@ -42,6 +42,3 @@ This project provisions a **highly available and secure AWS infrastructure** usi
 ### **5️⃣ Notifications & Alerts**
 - **Amazon SNS** to send email alerts on failures.
 
----
-
-## 📂 Project Structure
